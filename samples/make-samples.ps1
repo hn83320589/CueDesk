@@ -73,3 +73,11 @@ Write-Sample '05-utf16le-bilingual.srt' (Crlf @(
     '2', '00:00:04,500 --> 00:00:08,000', '今天的主題是字幕校對', "Today's topic is subtitle proofreading", '',
     '3', '00:00:08,500 --> 00:00:12,000', '<i>中英對照</i>', '<i>Bilingual captions</i>'
 )) ([System.Text.Encoding]::Unicode) ([byte[]](0xFF, 0xFE))
+
+# 6. UTF-8 without BOM, LF, Traditional Chinese - the most common real-world case; no issues.
+Write-Sample '06-utf8-nobom-zh-tw.srt' (Lf @(
+    '1', '00:00:01,000 --> 00:00:03,500', '這份字幕以 UTF-8 儲存，沒有 BOM。', '',
+    '2', '00:00:04,000 --> 00:00:06,500', '這是網路上最常見的字幕檔格式。', '',
+    '3', '00:00:07,000 --> 00:00:09,500', '中文不會亂碼，', '標點符號也正常顯示。', '',
+    '4', '00:00:10,000 --> 00:00:12,500', '<i>行內標籤</i>同樣保留。'
+)) $utf8 @()

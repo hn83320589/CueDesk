@@ -85,12 +85,25 @@ public class SampleFilesTests
         Assert.Empty(types);
     }
 
+    [Fact]
+    public void Sample6_utf8_without_bom_chinese_is_clean_and_not_garbled()
+    {
+        var (decoded, parsed, types, _) = Load("06-utf8-nobom-zh-tw.srt");
+        Assert.Equal(SubtitleEncoding.Utf8, decoded.Encoding);
+        Assert.False(decoded.HasReplacementCharacters);
+        Assert.Equal(4, parsed.Cues.Length);
+        Assert.Equal("中文不會亂碼，\n標點符號也正常顯示。", parsed.Cues[2].Text);
+        Assert.Equal("<i>行內標籤</i>同樣保留。", parsed.Cues[3].Text);
+        Assert.Empty(types);
+    }
+
     [Theory]
     [InlineData("01-utf8-bom-zh-tw.srt")]
     [InlineData("02-big5-zh-tw.srt")]
     [InlineData("03-malformed-blocks.srt")]
     [InlineData("04-english.srt")]
     [InlineData("05-utf16le-bilingual.srt")]
+    [InlineData("06-utf8-nobom-zh-tw.srt")]
     public void Every_sample_round_trips_through_srt_export(string name)
     {
         var cues = Load(name).Parsed.Cues;

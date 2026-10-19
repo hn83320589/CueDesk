@@ -33,25 +33,31 @@ public sealed class SettingsStore(string path) : ISettingsStore
 
     public SettingsLoadResult Load()
     {
-        if (!File.Exists(Path))
+        string json;
+        try
+        {
+            json = File.ReadAllText(Path);
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
         {
             return new SettingsLoadResult(AppSettings.Default, "找不到設定檔，已使用預設值。", FileMissing: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // e.g. no read permission or the file is locked: still start with defaults.
+            return new SettingsLoadResult(AppSettings.Default, $"無法讀取設定檔，已使用預設值（{ex.Message}）");
         }
 
         AppSettings? loaded;
         try
         {
-            loaded = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(Path), JsonOptions);
+            loaded = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions);
         }
         catch (Exception ex) when (ex is JsonException or NotSupportedException)
         {
             var backup = BackupCorruptFile();
             return new SettingsLoadResult(AppSettings.Default,
                 $"設定檔已損毀，已改用預設值。{(backup is null ? "" : $"原檔備份於 {backup}")}（{ex.Message}）");
-        }
-        catch (IOException ex)
-        {
-            return new SettingsLoadResult(AppSettings.Default, $"無法讀取設定檔，已使用預設值（{ex.Message}）");
         }
 
         if (loaded is null)
@@ -116,7 +122,7 @@ public sealed class SettingsStore(string path) : ISettingsStore
             File.Copy(Path, backup, overwrite: true);
             return backup;
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             // The warning already tells the user defaults are used; a missing backup is not fatal.
             return null;

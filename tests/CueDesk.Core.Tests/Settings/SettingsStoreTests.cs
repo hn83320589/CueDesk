@@ -102,4 +102,16 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.Single(s.RecentFiles, p => p.Equals(@"C:\f5.srt", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(@"c:\F5.SRT", s.WithoutRecentFile(@"C:\f5.srt").RecentFiles);
     }
+
+    [Fact]
+    public void Unreadable_settings_path_returns_defaults_instead_of_throwing()
+    {
+        // Reading a directory as a file raises UnauthorizedAccessException on Windows,
+        // the same exception a settings file without read permission produces.
+        Directory.CreateDirectory(SettingsPath);
+        var result = new SettingsStore(SettingsPath).Load();
+        Assert.Equal(AppSettings.Default.Thresholds, result.Settings.Thresholds);
+        Assert.Contains("無法讀取", result.Warning);
+        Assert.False(result.FileMissing);
+    }
 }

@@ -1,6 +1,6 @@
 # CueDesk 字幕校稿台
 
-[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+[![CI](https://github.com/hn83320589/CueDesk/actions/workflows/ci.yml/badge.svg)](https://github.com/hn83320589/CueDesk/actions/workflows/ci.yml)
 
 給教學影片創作者用的 Windows 桌面小工具：開啟 `.srt` → 校正時間 → 檢查品質 → 匯出，一次完成。
 解決三個常見問題：Big5 字幕開起來亂碼、影片 23.976 → 25 fps 後字幕越後面越對不上、字幕閃太快觀眾來不及讀。
@@ -66,8 +66,8 @@ src/
   CueDesk.Presentation/  net9.0，MainViewModel（CommunityToolkit.Mvvm），UI 服務以介面抽象
   CueDesk.App/           MAUI，net9.0-windows10.0.19041.0，unpackaged；只有 View 與平台服務
 tests/
-  CueDesk.Core.Tests/          165 個案例（含範例檔驗證）
-  CueDesk.Presentation.Tests/  32 個案例（以 fake 取代對話框、檔案系統、設定）
+  CueDesk.Core.Tests/          166 個案例（含範例檔驗證、20 000 筆效能）
+  CueDesk.Presentation.Tests/  34 個案例（以 fake 取代對話框、檔案系統、設定）
 samples/                       5 個範例檔、產生腳本、EXPECTED.md
 ```
 
@@ -226,6 +226,10 @@ t' = t × 來源幀率 / 目標幀率      23.976 = 24000/1001，29.97 = 30000/1
 - 設定檔損毀時，原檔會備份為 `settings.corrupt.json`，下次儲存設定時以預設值覆寫。
 - 視窗大小與位置不會記憶。
 - 未處理的例外會寫入 `%LocalAppData%\CueDesk\crash.log`，供除錯使用。
+
+## 測試報告
+
+需求與驗收標準的逐項對照、200 個單元測試的結果、UI 實測紀錄與覆蓋率，見 [docs/TEST-REPORT.md](docs/TEST-REPORT.md)。
 
 ## 範例資料
 

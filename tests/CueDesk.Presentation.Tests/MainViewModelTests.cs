@@ -420,4 +420,47 @@ public class MainViewModelTests
         Assert.Single(h.Dialogs.Alerts);
         Assert.Null(h.Settings.Saved);
     }
+
+    // ---- scale and history depth ----
+
+    [Fact]
+    public async Task Twenty_thousand_cue_file_opens_and_edits_quickly()
+    {
+        var sb = new System.Text.StringBuilder();
+        for (var i = 0; i < 20_000; i++)
+        {
+            var start = i * 3_500L;
+            sb.Append($"{i + 1}\r\n{Core.Timing.TimeFormat.Format(start)} --> {Core.Timing.TimeFormat.Format(start + 3_000)}\r\n第 {i + 1} 句\r\nLine {i + 1}\r\n\r\n");
+        }
+        var h = new Harness();
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        await h.OpenAsync(sb.ToString());
+        h.Select(10_000);
+        await h.Vm.DeleteCommand.ExecuteAsync(null);
+        h.Vm.UndoCommand.Execute(null);
+        watch.Stop();
+
+        Assert.Equal(20_000, h.Vm.Rows.Count);
+        Assert.False(h.Vm.IsModified);
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(10), $"took {watch.Elapsed}");
+    }
+
+    [Fact]
+    public async Task At_least_fifty_view_model_operations_can_be_undone()
+    {
+        var h = new Harness();
+        await h.OpenAsync();
+        for (var i = 0; i < 55; i++)
+        {
+            h.Select(h.Vm.Cues.Length);
+            await h.Vm.InsertCommand.ExecuteAsync(null);
+        }
+        Assert.Equal(58, h.Vm.Cues.Length);
+        for (var i = 0; i < 50; i++)
+        {
+            h.Vm.UndoCommand.Execute(null);
+        }
+        Assert.Equal(8, h.Vm.Cues.Length);
+        Assert.True(h.Vm.CanRedo);
+    }
 }

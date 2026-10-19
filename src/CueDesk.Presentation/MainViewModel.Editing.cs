@@ -44,6 +44,11 @@ public sealed partial class MainViewModel
             EditText = cue.Text;
             SplitTime = TimeFormat.Format(cue.StartMs + cue.DurationMs / 2);
         }
+        else
+        {
+            // Do not keep showing a deleted or no-longer-selected cue in the (disabled) edit panel.
+            EditStart = EditEnd = EditText = SplitTime = string.Empty;
+        }
         OnPropertyChanged(nameof(EditingCue));
         OnPropertyChanged(nameof(HasEditingCue));
         OnPropertyChanged(nameof(HasSelection));

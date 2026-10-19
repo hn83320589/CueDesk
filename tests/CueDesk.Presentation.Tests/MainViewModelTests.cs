@@ -634,4 +634,19 @@ public class MainViewModelTests
         await h.Vm.ApplyEditCommand.ExecuteAsync(null);
         Assert.DoesNotContain(h.Vm.Issues, i => i.Type == Core.Quality.IssueType.EmptyText);
     }
+
+    [Fact]
+    public async Task Edit_panel_is_cleared_when_no_single_cue_is_selected()
+    {
+        var h = new Harness();
+        await h.OpenAsync();
+        h.Select(1);
+        Assert.Equal("first", h.Vm.EditText);
+
+        await h.Vm.DeleteCommand.ExecuteAsync(null);   // selection becomes empty
+        Assert.Equal(("", "", "", ""), (h.Vm.EditStart, h.Vm.EditEnd, h.Vm.EditText, h.Vm.SplitTime));
+
+        h.Select(1, 2);
+        Assert.Equal("", h.Vm.EditText);
+    }
 }

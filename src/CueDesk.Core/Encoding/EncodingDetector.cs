@@ -14,14 +14,16 @@ public enum SubtitleEncoding
 /// <param name="HasReplacementCharacters">True when some bytes were not valid in the detected encoding.</param>
 public sealed record DecodedText(string Text, SubtitleEncoding Encoding, bool HasReplacementCharacters)
 {
-    public string EncodingName => Encoding switch
+    public string EncodingName => NameOf(Encoding);
+
+    public static string NameOf(SubtitleEncoding encoding) => encoding switch
     {
         SubtitleEncoding.Utf8Bom => "UTF-8 (BOM)",
         SubtitleEncoding.Utf8 => "UTF-8",
         SubtitleEncoding.Utf16LittleEndian => "UTF-16 LE",
         SubtitleEncoding.Utf16BigEndian => "UTF-16 BE",
         SubtitleEncoding.Big5 => "Big5",
-        _ => Encoding.ToString(),
+        _ => encoding.ToString(),
     };
 }
 

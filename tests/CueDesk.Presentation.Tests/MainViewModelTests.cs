@@ -587,4 +587,38 @@ public class MainViewModelTests
         Assert.Empty(h.Dialogs.OverwriteQuestions);
         Assert.False(h.Vm.IsModified);
     }
+
+    // ---- encoding changes on save are never silent ----
+
+    [Fact]
+    public async Task Saving_utf8_without_bom_asks_before_adding_a_bom()
+    {
+        var h = new Harness(AppSettings.Default with { WriteBom = true });
+        await h.OpenAsync(); // UTF-8 without BOM
+        h.Dialogs.ConfirmAnswer = false;
+        await h.Vm.SaveCommand.ExecuteAsync(null);
+        Assert.Contains("UTF-8 (BOM)", Assert.Single(h.Dialogs.Confirms));
+        Assert.NotEqual(0xEF, h.Files.Files[@"C:\subs\demo.srt"][0]);
+    }
+
+    [Fact]
+    public async Task Saving_with_the_same_encoding_does_not_ask()
+    {
+        var h = new Harness(AppSettings.Default with { WriteBom = true });
+        await h.OpenAsync(bytes: [0xEF, 0xBB, 0xBF, .. System.Text.Encoding.UTF8.GetBytes(Harness.ThreeCues)]);
+        await h.Vm.SaveCommand.ExecuteAsync(null);
+        Assert.Empty(h.Dialogs.Confirms);
+        Assert.False(h.Vm.IsModified);
+    }
+
+    [Fact]
+    public async Task Encoding_question_is_asked_only_until_the_file_is_saved_once()
+    {
+        var h = new Harness(AppSettings.Default with { WriteBom = true });
+        await h.OpenAsync();
+        await h.Vm.SaveCommand.ExecuteAsync(null);
+        await h.Vm.SaveCommand.ExecuteAsync(null);
+        Assert.Single(h.Dialogs.Confirms);
+        Assert.Equal("UTF-8 (BOM)", h.Vm.EncodingName);
+    }
 }

@@ -161,8 +161,10 @@ public sealed partial class MainViewModel
                     return false;
             }
         }
-        if (_sourceEncoding is SubtitleEncoding.Big5 or SubtitleEncoding.Utf16LittleEndian or SubtitleEncoding.Utf16BigEndian
-            && !await _dialogs.ConfirmAsync("儲存編碼", $"原檔為 {EncodingName}，將改以 UTF-8 儲存。要繼續嗎？"))
+        // Any encoding change is confirmed: Big5/UTF-16 → UTF-8, and adding or removing a UTF-8 BOM.
+        var target = Settings.WriteBom ? SubtitleEncoding.Utf8Bom : SubtitleEncoding.Utf8;
+        if (_sourceEncoding is { } source && source != target
+            && !await _dialogs.ConfirmAsync("儲存編碼", $"原檔為 {EncodingName}，將以 {DecodedText.NameOf(target)} 儲存。要繼續嗎？"))
         {
             return false;
         }
@@ -175,8 +177,8 @@ public sealed partial class MainViewModel
         {
             _pathWithSkippedBlocks = null; // the user chose to overwrite; the skipped blocks are gone now
         }
-        _sourceEncoding = Settings.WriteBom ? SubtitleEncoding.Utf8Bom : SubtitleEncoding.Utf8;
-        EncodingName = Settings.WriteBom ? "UTF-8 (BOM)" : "UTF-8";
+        _sourceEncoding = target;
+        EncodingName = DecodedText.NameOf(target);
         FilePath = path;
         SaveSettings(Settings.WithRecentFile(path));
         Refresh();

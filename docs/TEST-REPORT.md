@@ -12,13 +12,12 @@
 | 類別 | 數量 | 通過 | 失敗 | 待驗證 |
 |---|---:|---:|---:|---:|
 | 單元測試（`dotnet test`） | 200 | 200 | 0 | 0 |
-| UI 實測（UI Automation 實際操作 app） | 15 | 13 | 0 | 2 |
-| 驗收標準 | 17 | 14 | 0 | 3 |
+| UI 實測（UI Automation 自動操作＋人工拖放） | 15 | 15 | 0 | 0 |
+| 驗收標準 | 17 | 15 | 0 | 2 |
 
 - 程式碼覆蓋率：CueDesk.Core **84.7%** 行 / 77.4% 分支（由 Core.Tests 量測）；CueDesk.Presentation **78.0%** 行 / 67.0% 分支。
-- 待驗證項目：
-  - 拖放實測（UI-14、UI-15）：自動化工具無法模擬檔案總管拖放，需人工操作一次，見第 6 節。
-  - 驗收標準 16 的 CI 徽章、17 的 CI 綠燈與 artifact：需推送到 GitHub 後確認。
+- 待驗證項目：驗收標準 16 的 CI 徽章、17 的 CI 綠燈與 artifact，需推送到 GitHub 後確認。
+- 拖放（UI-14、UI-15）由人工操作驗證通過，並以 UI Automation 讀取畫面核對，見第 6 節。
 
 ## 2. 驗收標準對照
 
@@ -37,7 +36,7 @@
 | 11 | 復原/重做至少 50 層，批次一步還原，新操作清空重做 | 單元測試 | `UndoStackTests`（7，含 60 層）、`At_least_fifty_view_model_operations_can_be_undone`、`Shift_applies_after_confirmation_as_one_step`、`New_edit_after_undo_clears_redo` | ✅ |
 | 12 | WebVTT 與純文字匯出格式正確（標頭、句點分隔、標籤處理） | 單元測試 | `Vtt_*`（3）、`Transcript_has_text_only_without_times_or_tags`、`Export_vtt_writes_chosen_path_and_keeps_modified_state` | ✅ |
 | 13 | 設定與最近檔案關閉重開後保留；未儲存的修改在關閉與開啟他檔前詢問；設定檔損毀不崩潰 | 實測 | UI-06、UI-07、UI-08、UI-09、UI-10、UI-11 | ✅ |
-| 14 | 拖放 .srt 可開啟，拖入非字幕檔有明確提示 | 實測 | 邏輯已由單元測試驗證（`Dropping_srt_opens_it`、`Dropping_non_subtitle_file_shows_clear_message`）；實際拖放 UI-14、UI-15 待人工 | ⏳ 待驗證 |
+| 14 | 拖放 .srt 可開啟，拖入非字幕檔有明確提示 | 實測 | 人工實測 UI-14、UI-15；單元測試 `Dropping_srt_opens_it`、`Dropping_non_subtitle_file_shows_clear_message` | ✅ |
 | 15 | 核心邏輯單元測試至少 50 個案例，`dotnet test` 全數通過 | 執行測試 | 200 個案例（Core 166、Presentation 34），0 失敗 | ✅ |
 | 16 | README 含建置步驟、截圖、模組說明、公式、檢查規則、已知限制 | 檢視 README | 各章節皆已具備；CI 徽章網址已設定，需推送後才會顯示狀態 | ⏳ 推送後確認 |
 | 17 | GitHub Actions 在 Windows 建置 MAUI 與測試、CI 綠燈、README 徽章、上傳 win-x64 artifact | 檢視 Actions | `.github/workflows/ci.yml`；CI 的 build、test、publish 步驟已在本機以相同指令跑過且成功 | ⏳ 推送後確認 |
@@ -48,7 +47,7 @@
 
 | 需求 | 實作位置 | 驗證 | 結果 |
 |---|---|---|---|
-| 開啟 .srt：檔案選擇器、拖放 | `MainViewModel.File.cs`、`FileDialogService`、`MainPage.OnDrop` | 單元＋UI-01、UI-14 | ✅ / 拖放 ⏳ |
+| 開啟 .srt：檔案選擇器、拖放 | `MainViewModel.File.cs`、`FileDialogService`、`MainPage.OnDrop` | 單元＋UI-01、UI-14、UI-15 | ✅ |
 | 編碼偵測：UTF-8±BOM、UTF-16 BOM、Big5，狀態列顯示 | `EncodingDetector` | 單元＋UI-01 | ✅ |
 | 容錯解析與錯誤行號 | `SrtParser` | 單元＋UI-02 | ✅ |
 | 列表顯示序號、起始、結束、時長、文字 | `MainPage.xaml`、`CueRowViewModel` | UI-01 截圖 | ✅ |
@@ -140,8 +139,8 @@
 | UI-11 | 設定值超出範圍 | `minGapMs: -5` 後啟動 | 該欄位還原為預設值並提示，其他欄位保留 | 「設定值不合法，已還原為預設值：最小間隔」；最小間隔為 40 | ✅ |
 | UI-12 | 20 000 筆效能 | 開啟 1.78 MB、20 000 筆的檔案，刪除一筆，輸入位移 | 可正常操作 | 開檔 1.6 秒、刪除 0.5 秒、預覽「對象 19999 筆」即時更新 | ✅ |
 | UI-13 | Release 發佈檔 | 執行 `dotnet publish -r win-x64 --self-contained`，以發佈檔開啟 UTF-16 範例 | 可啟動並正確開檔 | 標題、編碼 UTF-16 LE、3 筆都正確 | ✅ |
-| UI-14 | 拖放 .srt 開啟 | 從檔案總管把 .srt 拖到視窗 | 開啟該檔 | 自動化無法完成（見第 6 節） | ⏳ 待人工 |
-| UI-15 | 拖放非字幕檔 | 把 .txt 拖到視窗 | 顯示「只能開啟 .srt 字幕檔」並列出檔名 | 同上 | ⏳ 待人工 |
+| UI-14 | 拖放 .srt 開啟 | 人工：從檔案總管把 `04-english.srt` 拖到清單區（Release 發佈檔，一般權限） | 開啟該檔 | 標題為 04-english.srt、10 筆字幕、編碼 UTF-8、狀態「已開啟 04-english.srt：10 筆字幕」 | ✅ |
+| UI-15 | 拖放非字幕檔 | 人工：把 `notes.txt` 拖進視窗 | 顯示「只能開啟 .srt 字幕檔」並列出檔名 | 對話框「不支援的檔案：只能開啟 .srt 字幕檔。拖入的檔案：notes.txt」，原文件不受影響 | ✅ |
 
 佐證截圖（只擷取 CueDesk 視窗本身）：
 
@@ -153,21 +152,16 @@
 
 ## 6. 待驗證項目說明
 
-### UI-14 / UI-15 拖放
+### UI-14 / UI-15 拖放（已通過）
 
-- 判斷「是否為 .srt」與「非字幕檔的提示訊息」的邏輯在 `MainViewModel.OpenDroppedAsync`，已由單元測試驗證。
-- 未經實測的是 WinUI 的拖放事件（`DropGestureRecognizer`、`DataView.GetStorageItemsAsync`）。
-- 嘗試過 3 種自動化方式，都無法產生真正的檔案總管拖放：
-  1. 不按住滑鼠直接呼叫 OLE `DoDragDrop`：結果為 None，因為 OLE 立即結束，目標視窗沒有收到 DragOver。
-  2. 用 `mouse_event` 模擬按下、移動、放開：拖曳來源視窗沒有收到 MouseDown。
-  3. 改用 `SendInput`：回傳錯誤 87，原因是測試腳本中 `INPUT` 結構的大小宣告錯誤，屬於測試工具本身的問題，與 CueDesk 無關。
-- 依「同一問題最多嘗試 3 次」的規則，已停止繼續嘗試。
-
-人工驗證步驟（約 1 分鐘）：
-1. 啟動 CueDesk。
-2. 從檔案總管把 `samples/04-english.srt` 拖到清單區：應開啟，狀態列顯示 UTF-8、10 筆字幕。
-3. 把任一 `.txt` 檔拖進去：應出現「不支援的檔案：只能開啟 .srt 字幕檔」，並列出檔名。
-
+- 自動化沒能完成拖放，共試了 3 種方式：
+  1. 不按住滑鼠直接呼叫 OLE `DoDragDrop`
+  2. 用 `mouse_event` 模擬按下、移動、放開
+  3. 改用 `SendInput`：回傳錯誤 87，原因是測試腳本的 `INPUT` 結構大小寫錯
+- 依「同一問題最多 3 次」的規則停止後，改為人工驗證。
+- 第一次人工拖放時出現「禁止」游標。檢查後發現原因是：測試用的 shell 以系統管理員權限（High integrity）執行，從它啟動的 CueDesk 也跟著是高權限，Windows UIPI 因此封鎖從一般權限的檔案總管拖放進來。這實際驗證了 README 的已知限制「以系統管理員身分執行時無法拖放」，不是程式缺陷。
+- 改經由 `explorer.exe` 以一般權限（Medium integrity，0x2000）啟動 Release 發佈檔後，兩項拖放都正常；結果再以 UI Automation 讀取畫面文字核對（見第 5 節的 UI-14、UI-15）。
+- 由此可知，自動化測試的第 1、2 次失敗，也可能與 shell 的權限有關。
 ### 驗收標準 16、17
 
 推送後確認 Actions 的執行結果是綠燈，`CueDesk-win-x64` artifact 已上傳，README 的徽章也顯示 passing。

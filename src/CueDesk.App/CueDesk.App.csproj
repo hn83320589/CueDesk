@@ -14,9 +14,12 @@
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>
 
-		<!-- Unpackaged deployment. An explicit RID makes restore fetch the matching runtime pack;
-		     without it the default RID differs between SDK/workload versions (CI failed on this). -->
+		<!-- Unpackaged, self-contained deployment.
+		     WindowsAppSDKSelfContained needs the .NET runtime pack at build time, but restore only downloads it
+		     when SelfContained is set during evaluation; without these two lines a clean machine (CI) fails
+		     with NETSDK1112 while a machine with the pack already in its NuGet cache builds fine. -->
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<SelfContained>true</SelfContained>
 		<WindowsPackageType>None</WindowsPackageType>
 		<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
 

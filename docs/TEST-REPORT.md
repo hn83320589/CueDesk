@@ -178,12 +178,13 @@
 | 6 | 單元測試 | 測試以 `Assert.Equal` 比較 `ImmutableArray`，但它比的是參考而非內容 | 測試改用陣列內容比對（測試本身的錯誤） |
 | 7 | 單元測試 | 20 000 筆效能測試的資料太密集，確實超出閱讀速度上限 | 調整測試資料（檢查器的判斷是正確的） |
 | 8 | **提交前檢查** | `dotnet new gitignore` 範本中的 `*.app` 規則（原為 macOS bundle）同時符合專案資料夾 `CueDesk.App`，導致**整個 MAUI 專案從未被 commit**；照原樣推送的話 CI 必定失敗 | `.gitignore` 加入例外規則 `!/src/CueDesk.App/`；並從乾淨的 clone 重新建置、測試、發佈驗證（見第 8 節） |
+| 9 | **第一次 CI** | GitHub Actions 的 Build 失敗：NETSDK1112「未下載 Microsoft.NETCore.App.Runtime.win-x64 的執行階段套件」。原因是 `WindowsAppSDKSelfContained` 在 build 階段需要 runtime pack，但 restore 評估時 `SelfContained=false`，所以沒有下載。本機能過，只是因為 NuGet 快取裡先前 publish 時已經有這個 pack | 以**空的 NuGet 快取**在本機重現同樣的錯誤；在 csproj 明確設定 `RuntimeIdentifier=win-x64` 與 `SelfContained=true` 後，同樣條件下 restore、build、test、publish 全部通過 |
 
 觀察（預期行為，不視為缺陷）：設定檔有問題時，會先顯示提示對話框，按下確定後才開啟命令列指定的檔案（UI-12 測試時觀察到）。
 
 ## 8. 乾淨 clone 驗證（模擬 CI）
 
-修正問題 8 之後，從本機 repo `git clone` 到全新資料夾，依 CI 的步驟執行：
+修正問題 8、9 之後，從本機 repo `git clone` 到全新資料夾，並設定 `NUGET_PACKAGES` 指向**空的套件快取**（模擬全新的 CI runner），依 CI 的步驟執行：
 
 | 步驟 | 結果 |
 |---|---|

@@ -94,4 +94,13 @@ public class SubtitleWritersTests
         Assert.StartsWith("1\r\n", SubtitleWriters.Write(ExportFormat.Srt, Cues));
         Assert.StartsWith("Hello", SubtitleWriters.Write(ExportFormat.Transcript, Cues));
     }
+
+    [Fact]
+    public void Srt_empty_cue_has_no_extra_blank_line_and_round_trips()
+    {
+        var cues = CueList.From((0, 1_000, ""), (2_000, 3_000, "B"));
+        var srt = SubtitleWriters.WriteSrt(cues);
+        Assert.Equal("1\r\n00:00:00,000 --> 00:00:01,000\r\n\r\n2\r\n00:00:02,000 --> 00:00:03,000\r\nB\r\n\r\n", srt);
+        Assert.Equal(["", "B"], SrtParser.Parse(srt).Cues.Select(c => c.Text));
+    }
 }

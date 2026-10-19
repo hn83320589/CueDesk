@@ -621,4 +621,17 @@ public class MainViewModelTests
         Assert.Single(h.Dialogs.Confirms);
         Assert.Equal("UTF-8 (BOM)", h.Vm.EncodingName);
     }
+
+    [Fact]
+    public async Task Inserted_cue_is_flagged_until_text_is_entered()
+    {
+        var h = new Harness();
+        await h.OpenAsync();
+        h.Select(3);
+        await h.Vm.InsertCommand.ExecuteAsync(null);
+        Assert.Contains(h.Vm.Issues, i => i.Type == Core.Quality.IssueType.EmptyText);
+        h.Vm.EditText = "新字幕";
+        await h.Vm.ApplyEditCommand.ExecuteAsync(null);
+        Assert.DoesNotContain(h.Vm.Issues, i => i.Type == Core.Quality.IssueType.EmptyText);
+    }
 }

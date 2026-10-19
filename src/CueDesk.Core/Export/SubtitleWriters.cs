@@ -41,7 +41,8 @@ public static partial class SubtitleWriters
             var cue = cues[i];
             sb.Append(i + 1).Append(NewLine);
             sb.Append(TimeFormat.Format(cue.StartMs)).Append(" --> ").Append(TimeFormat.Format(cue.EndMs)).Append(NewLine);
-            foreach (var line in cue.Lines)
+            // An empty cue writes no text line; otherwise it would add a second blank line.
+            foreach (var line in cue.Text.Length == 0 ? [] : cue.Lines)
             {
                 sb.Append(line).Append(NewLine);
             }

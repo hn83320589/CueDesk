@@ -136,4 +136,12 @@ public class QualityCheckerTests
         var issue = Assert.Single(QualityChecker.Check(cues, Defaults));
         Assert.Equal(cues[1].Id, issue.CueId);
     }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("<i></i>")]
+    [InlineData("{\\an8}")]
+    public void Empty_text_is_detected_alone(string text) =>
+        Assert.Equal([IssueType.EmptyText], Types(WithClean(3_000, 5_000, text)));
 }

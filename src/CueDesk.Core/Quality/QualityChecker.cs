@@ -14,6 +14,9 @@ public enum IssueType
     ReadingSpeed,
     LineTooLong,
     TooManyLines,
+
+    /// <summary>Extra check beyond the seven required ones: no visible text (e.g. a freshly inserted cue).</summary>
+    EmptyText,
 }
 
 public sealed record QualityThresholds
@@ -41,6 +44,7 @@ public sealed record QualityIssue(IssueType Type, int CueId, int Sequence, strin
         IssueType.ReadingSpeed => "閱讀速度過快",
         IssueType.LineTooLong => "單行過長",
         IssueType.TooManyLines => "行數過多",
+        IssueType.EmptyText => "空白字幕",
         _ => Type.ToString(),
     };
 
@@ -107,6 +111,11 @@ public static class QualityChecker
             if (lines.Length > t.MaxLines)
             {
                 Add(IssueType.TooManyLines, $"共 {lines.Length} 行（上限 {t.MaxLines} 行）");
+            }
+
+            if (string.IsNullOrWhiteSpace(Markup.Strip(cue.Text)))
+            {
+                Add(IssueType.EmptyText, "沒有文字");
             }
         }
         return issues.ToImmutable();

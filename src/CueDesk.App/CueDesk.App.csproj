@@ -14,7 +14,9 @@
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>
 
-		<!-- Unpackaged deployment -->
+		<!-- Unpackaged deployment. An explicit RID makes restore fetch the matching runtime pack;
+		     without it the default RID differs between SDK/workload versions (CI failed on this). -->
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 		<WindowsPackageType>None</WindowsPackageType>
 		<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
 

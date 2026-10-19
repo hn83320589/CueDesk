@@ -29,6 +29,16 @@ public sealed class FakeDialogs : IDialogService
         return Task.FromResult(ConfirmAnswer);
     }
 
+    public Queue<OverwriteChoice> OverwriteChoices { get; } = new();
+
+    public List<string> OverwriteQuestions { get; } = [];
+
+    public Task<OverwriteChoice> AskOverwriteDroppingBlocksAsync(string message)
+    {
+        OverwriteQuestions.Add(message);
+        return Task.FromResult(OverwriteChoices.Count > 0 ? OverwriteChoices.Dequeue() : OverwriteChoice.Cancel);
+    }
+
     public Task<SaveChoice> AskSaveChangesAsync(string message)
     {
         SaveQuestions++;

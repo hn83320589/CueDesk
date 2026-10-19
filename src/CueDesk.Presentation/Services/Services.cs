@@ -10,6 +10,14 @@ public enum SaveChoice
     Cancel,
 }
 
+/// <summary>Answer when saving over a source file whose malformed blocks were not loaded.</summary>
+public enum OverwriteChoice
+{
+    SaveAs,
+    Overwrite,
+    Cancel,
+}
+
 public interface IDialogService
 {
     Task AlertAsync(string title, string message);
@@ -18,6 +26,9 @@ public interface IDialogService
 
     /// <summary>Asks what to do with unsaved changes: save, discard, or cancel the pending action.</summary>
     Task<SaveChoice> AskSaveChangesAsync(string message);
+
+    /// <summary>Warns that overwriting will permanently drop blocks that could not be loaded.</summary>
+    Task<OverwriteChoice> AskOverwriteDroppingBlocksAsync(string message);
 }
 
 public interface IFileDialogService

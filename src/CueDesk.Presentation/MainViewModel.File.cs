@@ -31,6 +31,12 @@ public sealed partial class MainViewModel
 
     private SubtitleEncoding? _sourceEncoding;
 
+    /// <summary>
+    /// The opened file whose malformed blocks were skipped. Overwriting it would silently delete those blocks,
+    /// so saving to this path asks first; cleared once the user explicitly overwrites it.
+    /// </summary>
+    private string? _pathWithSkippedBlocks;
+
     public string WindowTitle =>
         $"{(IsModified ? "* " : "")}{(FilePath is null ? "未命名" : Path.GetFileName(FilePath))} - CueDesk 字幕校稿台";
 
@@ -113,6 +119,7 @@ public sealed partial class MainViewModel
         FilePath = path;
         EncodingName = decoded.HasReplacementCharacters ? $"{decoded.EncodingName}（部分字元無法辨識）" : decoded.EncodingName;
         ParseErrors = parsed.Errors;
+        _pathWithSkippedBlocks = parsed.Errors.IsEmpty ? null : Path.GetFullPath(path);
         Refresh();
         SaveSettings(Settings.WithRecentFile(path));
 
@@ -141,6 +148,19 @@ public sealed partial class MainViewModel
         {
             return false;
         }
+        if (IsPathWithSkippedBlocks(path))
+        {
+            var lines = string.Join("、", ParseErrors.Select(e => $"第 {e.LineNumber} 行"));
+            var choice = await _dialogs.AskOverwriteDroppingBlocksAsync(
+                $"原檔有 {ParseErrors.Length} 個格式錯誤的區塊（{lines}）未載入，覆寫原檔會讓這些內容永久消失。建議另存新檔以保留原檔。");
+            switch (choice)
+            {
+                case OverwriteChoice.SaveAs:
+                    return await SaveCoreAsync(null);
+                case OverwriteChoice.Cancel:
+                    return false;
+            }
+        }
         if (_sourceEncoding is SubtitleEncoding.Big5 or SubtitleEncoding.Utf16LittleEndian or SubtitleEncoding.Utf16BigEndian
             && !await _dialogs.ConfirmAsync("儲存編碼", $"原檔為 {EncodingName}，將改以 UTF-8 儲存。要繼續嗎？"))
         {
@@ -151,6 +171,10 @@ public sealed partial class MainViewModel
             return false;
         }
         _history.MarkSaved();
+        if (IsPathWithSkippedBlocks(path))
+        {
+            _pathWithSkippedBlocks = null; // the user chose to overwrite; the skipped blocks are gone now
+        }
         _sourceEncoding = Settings.WriteBom ? SubtitleEncoding.Utf8Bom : SubtitleEncoding.Utf8;
         EncodingName = Settings.WriteBom ? "UTF-8 (BOM)" : "UTF-8";
         FilePath = path;
@@ -214,6 +238,9 @@ public sealed partial class MainViewModel
             return false;
         }
     }
+
+    private bool IsPathWithSkippedBlocks(string path) =>
+        _pathWithSkippedBlocks is not null && string.Equals(Path.GetFullPath(path), _pathWithSkippedBlocks, StringComparison.OrdinalIgnoreCase);
 
     private string SuggestedName(string extension) =>
         (FilePath is null ? "subtitle" : Path.GetFileNameWithoutExtension(FilePath)) + extension;

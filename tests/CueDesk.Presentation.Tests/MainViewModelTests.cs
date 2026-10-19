@@ -503,4 +503,88 @@ public class MainViewModelTests
         Assert.False(h.Settings.Saved!.KeepBackup);
         Assert.DoesNotContain("✓", h.Vm.BackupMenuText);
     }
+
+    // ---- saving a file whose malformed blocks were skipped ----
+
+    private const string WithBrokenBlock =
+        "1\r\n00:00:01,000 --> 00:00:02,000\r\nok\r\n\r\n" +
+        "2\r\n00:00:0X,000 --> 00:00:04,000\r\nbroken\r\n\r\n" +   // line 6 is malformed
+        "3\r\n00:00:05,000 --> 00:00:06,000\r\nok2\r\n";
+
+    private static async Task<Harness> OpenBrokenAndEditAsync()
+    {
+        var h = new Harness();
+        await h.OpenAsync(WithBrokenBlock);
+        h.Dialogs.Alerts.Clear();
+        h.Select(1);
+        await h.Vm.DeleteCommand.ExecuteAsync(null);
+        return h;
+    }
+
+    [Fact]
+    public async Task Overwriting_source_with_skipped_blocks_warns_and_cancel_writes_nothing()
+    {
+        var h = await OpenBrokenAndEditAsync();
+        var original = h.Files.Files[@"C:\subs\demo.srt"];
+
+        await h.Vm.SaveCommand.ExecuteAsync(null);
+
+        var question = Assert.Single(h.Dialogs.OverwriteQuestions);
+        Assert.Contains("1 個格式錯誤", question);
+        Assert.Contains("第 6 行", question);
+        Assert.Same(original, h.Files.Files[@"C:\subs\demo.srt"]);
+        Assert.True(h.Vm.IsModified);
+    }
+
+    [Fact]
+    public async Task Choosing_save_as_keeps_the_original_file_intact()
+    {
+        var h = await OpenBrokenAndEditAsync();
+        var original = h.Files.Files[@"C:\subs\demo.srt"];
+        h.Dialogs.OverwriteChoices.Enqueue(OverwriteChoice.SaveAs);
+        h.FileDialogs.SaveResults.Enqueue(@"C:\subs\demo-fixed.srt");
+
+        await h.Vm.SaveCommand.ExecuteAsync(null);
+
+        Assert.Same(original, h.Files.Files[@"C:\subs\demo.srt"]);
+        Assert.Contains("ok2", System.Text.Encoding.UTF8.GetString(h.Files.Files[@"C:\subs\demo-fixed.srt"]));
+        Assert.Equal(@"C:\subs\demo-fixed.srt", h.Vm.FilePath);
+        Assert.False(h.Vm.IsModified);
+    }
+
+    [Fact]
+    public async Task Choosing_overwrite_writes_and_does_not_ask_again()
+    {
+        var h = await OpenBrokenAndEditAsync();
+        h.Dialogs.OverwriteChoices.Enqueue(OverwriteChoice.Overwrite);
+        await h.Vm.SaveCommand.ExecuteAsync(null);
+        Assert.DoesNotContain("broken", System.Text.Encoding.UTF8.GetString(h.Files.Files[@"C:\subs\demo.srt"]));
+        Assert.False(h.Vm.IsModified);
+
+        h.Select(1);
+        await h.Vm.DeleteCommand.ExecuteAsync(null);
+        await h.Vm.SaveCommand.ExecuteAsync(null);
+        Assert.Single(h.Dialogs.OverwriteQuestions);
+    }
+
+    [Fact]
+    public async Task Save_from_close_prompt_also_warns_about_skipped_blocks()
+    {
+        var h = await OpenBrokenAndEditAsync();
+        h.Dialogs.SaveChoices.Enqueue(SaveChoice.Save);
+        Assert.False(await h.Vm.ConfirmDiscardChangesAsync()); // overwrite question cancelled → window stays open
+        Assert.Single(h.Dialogs.OverwriteQuestions);
+    }
+
+    [Fact]
+    public async Task Files_without_skipped_blocks_save_without_extra_question()
+    {
+        var h = new Harness();
+        await h.OpenAsync();
+        h.Select(1);
+        await h.Vm.DeleteCommand.ExecuteAsync(null);
+        await h.Vm.SaveCommand.ExecuteAsync(null);
+        Assert.Empty(h.Dialogs.OverwriteQuestions);
+        Assert.False(h.Vm.IsModified);
+    }
 }

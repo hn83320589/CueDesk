@@ -463,4 +463,44 @@ public class MainViewModelTests
         Assert.Equal(8, h.Vm.Cues.Length);
         Assert.True(h.Vm.CanRedo);
     }
+
+    // ---- safe saving ----
+
+    [Fact]
+    public async Task Failed_write_reports_error_keeps_original_and_stays_modified()
+    {
+        var h = new Harness();
+        await h.OpenAsync();
+        var original = h.Files.Files[@"C:\subs\demo.srt"];
+        h.Select(1);
+        await h.Vm.DeleteCommand.ExecuteAsync(null);
+
+        h.Files.FailWrites = true;
+        await h.Vm.SaveCommand.ExecuteAsync(null);
+
+        Assert.Contains("磁碟空間不足", Assert.Single(h.Dialogs.Alerts).Message);
+        Assert.Same(original, h.Files.Files[@"C:\subs\demo.srt"]);
+        Assert.True(h.Vm.IsModified);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Save_passes_backup_setting_to_safe_writer(bool keepBackup)
+    {
+        var h = new Harness(AppSettings.Default with { KeepBackup = keepBackup });
+        await h.OpenAsync();
+        await h.Vm.SaveCommand.ExecuteAsync(null);
+        Assert.Equal(keepBackup, h.Files.LastKeepBackup);
+    }
+
+    [Fact]
+    public void Backup_toggle_updates_menu_text_and_saves()
+    {
+        var h = new Harness();
+        Assert.StartsWith("✓", h.Vm.BackupMenuText);
+        h.Vm.ToggleBackupCommand.Execute(null);
+        Assert.False(h.Settings.Saved!.KeepBackup);
+        Assert.DoesNotContain("✓", h.Vm.BackupMenuText);
+    }
 }

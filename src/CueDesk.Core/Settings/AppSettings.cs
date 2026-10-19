@@ -13,6 +13,9 @@ public sealed record AppSettings
     /// <summary>Whether saved/exported UTF-8 files start with a BOM.</summary>
     public bool WriteBom { get; init; } = true;
 
+    /// <summary>Whether overwriting a file keeps its previous content as "&lt;name&gt;.bak".</summary>
+    public bool KeepBackup { get; init; } = true;
+
     public string SourceFrameRate { get; init; } = "23.976";
 
     public string TargetFrameRate { get; init; } = "25";

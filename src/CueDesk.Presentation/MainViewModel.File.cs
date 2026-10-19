@@ -179,6 +179,9 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private void ToggleBom() => SaveSettings(Settings with { WriteBom = !Settings.WriteBom });
 
+    [RelayCommand]
+    private void ToggleBackup() => SaveSettings(Settings with { KeepBackup = !Settings.KeepBackup });
+
     /// <summary>
     /// Asks before discarding unsaved changes. Returns true when the caller may proceed
     /// (no changes, user chose to discard, or saving succeeded).
@@ -202,7 +205,7 @@ public sealed partial class MainViewModel
         try
         {
             var bytes = SubtitleWriters.ToUtf8Bytes(SubtitleWriters.Write(format, Cues), Settings.WriteBom);
-            _fileSystem.WriteAllBytes(path, bytes);
+            _fileSystem.WriteAllBytesSafely(path, bytes, Settings.KeepBackup);
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)

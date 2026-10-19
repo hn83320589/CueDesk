@@ -67,11 +67,14 @@ public sealed partial class MainViewModel : ObservableObject
 
     public string BomMenuText => Settings.WriteBom ? "✓ 儲存/匯出時加入 BOM" : "儲存/匯出時加入 BOM";
 
+    public string BackupMenuText => Settings.KeepBackup ? "✓ 覆寫時保留 .bak 備份" : "覆寫時保留 .bak 備份";
+
     public IReadOnlyList<string> RecentFiles => Settings.RecentFiles;
 
     partial void OnSettingsChanged(AppSettings value)
     {
         OnPropertyChanged(nameof(BomMenuText));
+        OnPropertyChanged(nameof(BackupMenuText));
         OnPropertyChanged(nameof(RecentFiles));
     }
 

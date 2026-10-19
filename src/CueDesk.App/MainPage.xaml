@@ -28,6 +28,7 @@
             <MenuFlyoutItem Text="匯出 WebVTT…" Command="{Binding ExportCommand}" CommandParameter="{x:Static export:ExportFormat.WebVtt}" />
             <MenuFlyoutItem Text="匯出純文字逐字稿…" Command="{Binding ExportCommand}" CommandParameter="{x:Static export:ExportFormat.Transcript}" />
             <MenuFlyoutItem Text="{Binding BomMenuText}" Command="{Binding ToggleBomCommand}" />
+            <MenuFlyoutItem Text="{Binding BackupMenuText}" Command="{Binding ToggleBackupCommand}" />
         </MenuBarItem>
         <MenuBarItem Text="編輯">
             <MenuFlyoutItem Text="{Binding UndoText}" Command="{Binding UndoCommand}">

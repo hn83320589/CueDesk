@@ -58,7 +58,20 @@ public sealed class InMemoryFileSystem : IFileSystem
 
     public byte[] ReadAllBytes(string path) => Files.TryGetValue(path, out var b) ? b : throw new FileNotFoundException(path);
 
-    public void WriteAllBytes(string path, byte[] bytes) => Files[path] = bytes;
+    /// <summary>When set, every write throws as if the disk were full; existing content stays untouched.</summary>
+    public bool FailWrites { get; set; }
+
+    public bool? LastKeepBackup { get; private set; }
+
+    public void WriteAllBytesSafely(string path, byte[] bytes, bool keepBackup)
+    {
+        if (FailWrites)
+        {
+            throw new IOException("磁碟空間不足（模擬）");
+        }
+        LastKeepBackup = keepBackup;
+        Files[path] = bytes;
+    }
 }
 
 public sealed class InMemorySettingsStore(AppSettings? initial = null, string? warning = null, bool fileMissing = false) : ISettingsStore

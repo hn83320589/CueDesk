@@ -1,4 +1,5 @@
 using CueDesk.Core.Export;
+using CueDesk.Core.IO;
 
 namespace CueDesk.Presentation.Services;
 
@@ -34,7 +35,8 @@ public interface IFileSystem
 
     byte[] ReadAllBytes(string path);
 
-    void WriteAllBytes(string path, byte[] bytes);
+    /// <summary>Writes via a temp file and atomic replace; optionally keeps the old content as &lt;path&gt;.bak.</summary>
+    void WriteAllBytesSafely(string path, byte[] bytes, bool keepBackup);
 }
 
 public sealed class PhysicalFileSystem : IFileSystem
@@ -45,5 +47,5 @@ public sealed class PhysicalFileSystem : IFileSystem
 
     public byte[] ReadAllBytes(string path) => File.ReadAllBytes(path);
 
-    public void WriteAllBytes(string path, byte[] bytes) => File.WriteAllBytes(path, bytes);
+    public void WriteAllBytesSafely(string path, byte[] bytes, bool keepBackup) => SafeFileWriter.Write(path, bytes, keepBackup);
 }

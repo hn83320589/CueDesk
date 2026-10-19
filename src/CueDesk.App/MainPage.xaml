@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:CueDesk.Presentation;assembly=CueDesk.Presentation"
+             xmlns:quality="clr-namespace:CueDesk.Core.Quality;assembly=CueDesk.Core"
+             xmlns:timing="clr-namespace:CueDesk.Core.Timing;assembly=CueDesk.Core"
+             xmlns:export="clr-namespace:CueDesk.Core.Export;assembly=CueDesk.Core"
+             x:Class="CueDesk.App.MainPage"
+             x:DataType="vm:MainViewModel">
+
+    <ContentPage.MenuBarItems>
+        <MenuBarItem Text="檔案">
+            <MenuFlyoutItem Text="開啟…" Command="{Binding OpenCommand}">
+                <MenuFlyoutItem.KeyboardAccelerators>
+                    <KeyboardAccelerator Modifiers="Ctrl" Key="O" />
+                </MenuFlyoutItem.KeyboardAccelerators>
+            </MenuFlyoutItem>
+            <MenuFlyoutSubItem x:Name="RecentMenu" Text="最近開啟" />
+            <MenuFlyoutSeparator />
+            <MenuFlyoutItem Text="儲存" Command="{Binding SaveCommand}">
+                <MenuFlyoutItem.KeyboardAccelerators>
+                    <KeyboardAccelerator Modifiers="Ctrl" Key="S" />
+                </MenuFlyoutItem.KeyboardAccelerators>
+            </MenuFlyoutItem>
+            <MenuFlyoutItem Text="另存新檔…" Command="{Binding SaveAsCommand}" />
+            <MenuFlyoutSeparator />
+            <MenuFlyoutItem Text="匯出 SRT…" Command="{Binding ExportCommand}" CommandParameter="{x:Static export:ExportFormat.Srt}" />
+            <MenuFlyoutItem Text="匯出 WebVTT…" Command="{Binding ExportCommand}" CommandParameter="{x:Static export:ExportFormat.WebVtt}" />
+            <MenuFlyoutItem Text="匯出純文字逐字稿…" Command="{Binding ExportCommand}" CommandParameter="{x:Static export:ExportFormat.Transcript}" />
+            <MenuFlyoutItem Text="{Binding BomMenuText}" Command="{Binding ToggleBomCommand}" />
+        </MenuBarItem>
+        <MenuBarItem Text="編輯">
+            <MenuFlyoutItem Text="{Binding UndoText}" Command="{Binding UndoCommand}">
+                <MenuFlyoutItem.KeyboardAccelerators>
+                    <KeyboardAccelerator Modifiers="Ctrl" Key="Z" />
+                </MenuFlyoutItem.KeyboardAccelerators>
+            </MenuFlyoutItem>
+            <MenuFlyoutItem Text="{Binding RedoText}" Command="{Binding RedoCommand}">
+                <MenuFlyoutItem.KeyboardAccelerators>
+                    <KeyboardAccelerator Modifiers="Ctrl" Key="Y" />
+                </MenuFlyoutItem.KeyboardAccelerators>
+            </MenuFlyoutItem>
+            <MenuFlyoutSeparator />
+            <MenuFlyoutItem Text="在選取項後插入" Command="{Binding InsertCommand}">
+                <MenuFlyoutItem.KeyboardAccelerators>
+                    <KeyboardAccelerator Modifiers="Ctrl" Key="I" />
+                </MenuFlyoutItem.KeyboardAccelerators>
+            </MenuFlyoutItem>
+            <MenuFlyoutItem Text="合併相鄰兩筆" Command="{Binding MergeCommand}">
+                <MenuFlyoutItem.KeyboardAccelerators>
+                    <KeyboardAccelerator Modifiers="Ctrl" Key="M" />
+                </MenuFlyoutItem.KeyboardAccelerators>
+            </MenuFlyoutItem>
+            <MenuFlyoutItem Text="刪除選取" Command="{Binding DeleteCommand}" />
+        </MenuBarItem>
+        <MenuBarItem Text="品質">
+            <MenuFlyoutItem Text="一鍵修正重疊與間隔" Command="{Binding FixGapsCommand}" />
+        </MenuBarItem>
+    </ContentPage.MenuBarItems>
+
+    <Grid x:Name="Root" RowDefinitions="*,Auto" ColumnDefinitions="*,400">
+        <Grid.GestureRecognizers>
+            <DropGestureRecognizer AllowDrop="True" DragOver="OnDragOver" Drop="OnDrop" />
+        </Grid.GestureRecognizers>
+
+        <!-- Left: subtitle list + quality panel -->
+        <Grid Grid.Row="0" Grid.Column="0" RowDefinitions="Auto,*,Auto,220" Padding="8,8,4,4">
+            <!-- Left padding matches the selection check box WinUI adds to each row in multi-select mode. -->
+            <Grid ColumnDefinitions="56,28,110,110,70,*" Padding="34,4,6,4" BackgroundColor="{StaticResource PanelBackground}">
+                <Label Text="#" FontAttributes="Bold" />
+                <Label Grid.Column="2" Text="起始" FontAttributes="Bold" />
+                <Label Grid.Column="3" Text="結束" FontAttributes="Bold" />
+                <Label Grid.Column="4" Text="時長(s)" FontAttributes="Bold" />
+                <Label Grid.Column="5" Text="文字" FontAttributes="Bold" />
+            </Grid>
+
+            <CollectionView x:Name="CueList" AutomationId="CueList" Grid.Row="1" ItemsSource="{Binding Rows}"
+                            SelectionMode="Multiple" SelectionChanged="OnCueSelectionChanged">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" />
+                </CollectionView.ItemsLayout>
+                <CollectionView.EmptyView>
+                    <Label Text="尚無字幕。使用「檔案 → 開啟」或把 .srt 檔拖放到這個視窗。" Style="{StaticResource Hint}"
+                           HorizontalOptions="Center" Margin="0,40" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CueRowViewModel">
+                        <Grid ColumnDefinitions="56,28,110,110,70,*" Padding="6,3">
+                            <Label Text="{Binding Sequence}" TextColor="{StaticResource Muted}" />
+                            <Label Grid.Column="1" Text="{Binding IssueMark}" TextColor="{StaticResource Warning}" />
+                            <Label Grid.Column="2" Text="{Binding Start}" FontFamily="Consolas" />
+                            <Label Grid.Column="3" Text="{Binding End}" FontFamily="Consolas" />
+                            <Label Grid.Column="4" Text="{Binding Duration}" FontFamily="Consolas" />
+                            <Label Grid.Column="5" Text="{Binding TextPreview}" LineBreakMode="TailTruncation" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,8,0,4">
+                <Label Text="{Binding IssueSummary, StringFormat='品質檢查：{0}'}" FontAttributes="Bold" />
+                <Button Grid.Column="1" Text="一鍵修正重疊與間隔" Command="{Binding FixGapsCommand}" />
+            </Grid>
+
+            <Border Grid.Row="3" Stroke="{StaticResource Border}" Padding="4">
+                <Grid RowDefinitions="Auto,*">
+                    <Label Text="{Binding ParseErrorsText}" IsVisible="{Binding HasParseErrors}"
+                           TextColor="{StaticResource Danger}" FontSize="12" Margin="4,0,4,6" MaxLines="4" />
+                    <CollectionView x:Name="IssueList" AutomationId="IssueList" Grid.Row="1" ItemsSource="{Binding Issues}"
+                                    SelectionMode="Single" SelectionChanged="OnIssueSelected">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="quality:QualityIssue">
+                                <Grid ColumnDefinitions="100,64,*" Padding="4,2">
+                                    <Label Text="{Binding TypeName}" FontAttributes="Bold" />
+                                    <Label Grid.Column="1" Text="{Binding Sequence, StringFormat='#{0}'}" />
+                                    <VerticalStackLayout Grid.Column="2">
+                                        <Label Text="{Binding Message}" />
+                                        <Label Text="{Binding FixFailure, StringFormat='無法自動修正：{0}'}" FontSize="12"
+                                               TextColor="{StaticResource Danger}" IsVisible="{Binding HasFixFailure}" />
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Right: tools -->
+        <ScrollView Grid.Row="0" Grid.Column="1" BackgroundColor="{StaticResource PanelBackground}">
+            <VerticalStackLayout Padding="12,4,12,16" Spacing="6">
+
+                <Label Text="編輯字幕" Style="{StaticResource SectionTitle}" />
+                <Label AutomationId="SelectionLabel" Text="{Binding SelectionText}" Style="{StaticResource Hint}" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsEnabled="{Binding HasEditingCue}">
+                    <VerticalStackLayout>
+                        <Label Text="起始" Style="{StaticResource Hint}" />
+                        <Entry AutomationId="EditStart" Text="{Binding EditStart}" FontFamily="Consolas" />
+                    </VerticalStackLayout>
+                    <VerticalStackLayout Grid.Column="1">
+                        <Label Text="結束" Style="{StaticResource Hint}" />
+                        <Entry Text="{Binding EditEnd}" FontFamily="Consolas" />
+                    </VerticalStackLayout>
+                </Grid>
+                <Editor Text="{Binding EditText}" HeightRequest="80" IsEnabled="{Binding HasEditingCue}" />
+                <Button Text="套用修改" Command="{Binding ApplyEditCommand}" IsEnabled="{Binding HasEditingCue}" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <Entry Text="{Binding SplitTime}" FontFamily="Consolas" IsEnabled="{Binding HasEditingCue}" />
+                    <Button Grid.Column="1" Text="在此時間分割" Command="{Binding SplitCommand}" />
+                </Grid>
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
+                    <Button Text="插入" Command="{Binding InsertCommand}" />
+                    <Button Grid.Column="1" Text="合併" Command="{Binding MergeCommand}" />
+                    <Button Grid.Column="2" Text="刪除" Command="{Binding DeleteCommand}" BackgroundColor="{StaticResource Danger}" />
+                </Grid>
+
+                <Label Text="整體位移" Style="{StaticResource SectionTitle}" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <Entry AutomationId="ShiftOffset" Text="{Binding ShiftOffset}" Placeholder="毫秒，例如 -1500" FontFamily="Consolas" />
+                    <HorizontalStackLayout Grid.Column="1">
+                        <CheckBox IsChecked="{Binding ShiftSelectedOnly}" />
+                        <Label Text="只套用到選取" />
+                    </HorizontalStackLayout>
+                </Grid>
+                <Label AutomationId="ShiftPreview" Text="{Binding ShiftPreview}" Style="{StaticResource Hint}" />
+                <Button Text="套用位移" Command="{Binding ApplyShiftCommand}" />
+
+                <Label Text="兩點校正" Style="{StaticResource SectionTitle}" />
+                <Label Text="指定兩筆字幕的正確起始時間，其餘依比例重算。" Style="{StaticResource Hint}" />
+                <Grid ColumnDefinitions="40,60,*,Auto" ColumnSpacing="6" RowDefinitions="Auto,Auto" RowSpacing="6">
+                    <Label Text="A #" />
+                    <Entry Grid.Column="1" Text="{Binding AnchorASequence}" />
+                    <Entry Grid.Column="2" Text="{Binding AnchorATime}" FontFamily="Consolas" Placeholder="00:00:00,000" />
+                    <Button Grid.Column="3" Text="取選取" Command="{Binding UseSelectionAsAnchorACommand}" />
+                    <Label Grid.Row="1" Text="B #" />
+                    <Entry Grid.Row="1" Grid.Column="1" Text="{Binding AnchorBSequence}" />
+                    <Entry Grid.Row="1" Grid.Column="2" Text="{Binding AnchorBTime}" FontFamily="Consolas" Placeholder="00:00:00,000" />
+                    <Button Grid.Row="1" Grid.Column="3" Text="取選取" Command="{Binding UseSelectionAsAnchorBCommand}" />
+                </Grid>
+                <Button Text="套用兩點校正" Command="{Binding ApplyTwoPointCommand}" />
+
+                <Label Text="幀率轉換" Style="{StaticResource SectionTitle}" />
+                <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="6">
+                    <Picker ItemsSource="{Binding FrameRates}" SelectedItem="{Binding SourceFrameRate}"
+                            ItemDisplayBinding="{Binding Name, x:DataType=timing:FrameRate}" />
+                    <Label Grid.Column="1" Text="→" />
+                    <Picker Grid.Column="2" ItemsSource="{Binding FrameRates}" SelectedItem="{Binding TargetFrameRate}"
+                            ItemDisplayBinding="{Binding Name, x:DataType=timing:FrameRate}" />
+                </Grid>
+                <Label Text="影片加速/減速後使用：時間 × 來源 ÷ 目標。" Style="{StaticResource Hint}" />
+                <Button Text="套用幀率轉換" Command="{Binding ApplyFrameRateCommand}" />
+
+                <Label Text="檢查門檻" Style="{StaticResource SectionTitle}" />
+                <Grid ColumnDefinitions="*,110" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
+                    <Label Text="最小間隔 (ms)" />
+                    <Entry AutomationId="MinGapEntry" Grid.Column="1" Text="{Binding MinGapMs}" />
+                    <Label Grid.Row="1" Text="最短時長 (ms)" />
+                    <Entry Grid.Row="1" Grid.Column="1" Text="{Binding MinDurationMs}" />
+                    <Label Grid.Row="2" Text="最長時長 (ms)" />
+                    <Entry Grid.Row="2" Grid.Column="1" Text="{Binding MaxDurationMs}" />
+                    <Label Grid.Row="3" Text="閱讀速度上限 (字元/秒)" />
+                    <Entry Grid.Row="3" Grid.Column="1" Text="{Binding MaxCharsPerSecond}" />
+                    <Label Grid.Row="4" Text="單行長度上限" />
+                    <Entry Grid.Row="4" Grid.Column="1" Text="{Binding MaxLineLength}" />
+                    <Label Grid.Row="5" Text="行數上限" />
+                    <Entry Grid.Row="5" Grid.Column="1" Text="{Binding MaxLines}" />
+                </Grid>
+                <Label Text="字元數不含標籤；中文等全形字元算 2。" Style="{StaticResource Hint}" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+                    <Button AutomationId="ApplyThresholds" Text="套用門檻" Command="{Binding ApplyThresholdsCommand}" />
+                    <Button Grid.Column="1" Text="還原預設" Command="{Binding ResetThresholdsCommand}" />
+                </Grid>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Status bar -->
+        <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="20"
+              Padding="10,4" BackgroundColor="#E9ECEF">
+            <Label AutomationId="StatusLabel" Text="{Binding StatusMessage}" LineBreakMode="TailTruncation" />
+            <Label AutomationId="CountLabel" Grid.Column="1" Text="{Binding CountText}" />
+            <Label AutomationId="IssueSummaryLabel" Grid.Column="2" Text="{Binding IssueSummary}" />
+            <Label AutomationId="EncodingLabel" Grid.Column="3" Text="{Binding EncodingName, StringFormat='編碼：{0}'}" FontAttributes="Bold" />
+        </Grid>
+    </Grid>
+</ContentPage>

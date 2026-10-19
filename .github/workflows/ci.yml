@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-test-publish:
+    runs-on: windows-latest
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      TFM: net9.0-windows10.0.19041.0
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Install MAUI workload
+        run: dotnet workload install maui-windows
+
+      - name: Restore
+        run: dotnet restore CueDesk.sln
+
+      - name: Build (Core, Presentation, MAUI app, tests)
+        run: dotnet build CueDesk.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test CueDesk.sln -c Release --no-build --logger trx --results-directory TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults/*.trx
+
+      - name: Publish win-x64 (unpackaged, self-contained)
+        run: >
+          dotnet publish src/CueDesk.App/CueDesk.App.csproj -c Release -f ${{ env.TFM }} -r win-x64
+          --self-contained true -p:WindowsPackageType=None -o artifacts/CueDesk-win-x64
+
+      - name: Upload win-x64 build
+        uses: actions/upload-artifact@v4
+        with:
+          name: CueDesk-win-x64
+          path: artifacts/CueDesk-win-x64
+          if-no-files-found: error

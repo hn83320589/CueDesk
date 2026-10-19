@@ -1,0 +1,5 @@
+* text=auto
+# Subtitle fixtures must keep their exact bytes (BOM, encoding, mixed line endings).
+samples/** -text
+*.srt -text
+*.png binary

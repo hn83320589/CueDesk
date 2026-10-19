@@ -32,10 +32,20 @@ public sealed partial class MainViewModel : ObservableObject
         var loaded = settingsStore.Load();
         _settings = loaded.Settings;
         SettingsWarning = loaded.Warning;
+        SettingsWarningNeedsDialog = loaded.Warning is not null && !loaded.FileMissing;
         LoadThresholdFields(_settings.Thresholds);
         _sourceFrameRate = FrameRates.FirstOrDefault(f => f.Name == _settings.SourceFrameRate) ?? FrameRates[0];
         _targetFrameRate = FrameRates.FirstOrDefault(f => f.Name == _settings.TargetFrameRate) ?? FrameRates[2];
         Refresh();
+        if (loaded.FileMissing)
+        {
+            // First run: create the file with defaults so later runs find it.
+            SaveSettings(_settings);
+        }
+        if (loaded.Warning is not null)
+        {
+            StatusMessage = loaded.Warning;
+        }
     }
 
     /// <summary>Raised when the view should scroll to (and select) a cue.</summary>
@@ -49,8 +59,21 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private AppSettings _settings;
 
-    /// <summary>Warning from loading settings (missing/corrupt file); shown once at startup.</summary>
+    /// <summary>Warning from loading settings (missing/corrupt file); shown in the status bar at startup.</summary>
     public string? SettingsWarning { get; }
+
+    /// <summary>True when the settings file existed but was unusable; the view shows a dialog.</summary>
+    public bool SettingsWarningNeedsDialog { get; }
+
+    public string BomMenuText => Settings.WriteBom ? "✓ 儲存/匯出時加入 BOM" : "儲存/匯出時加入 BOM";
+
+    public IReadOnlyList<string> RecentFiles => Settings.RecentFiles;
+
+    partial void OnSettingsChanged(AppSettings value)
+    {
+        OnPropertyChanged(nameof(BomMenuText));
+        OnPropertyChanged(nameof(RecentFiles));
+    }
 
     [ObservableProperty]
     private string _statusMessage = "請開啟 .srt 檔，或將檔案拖放到視窗中";

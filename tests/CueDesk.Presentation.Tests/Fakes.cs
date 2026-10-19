@@ -61,13 +61,13 @@ public sealed class InMemoryFileSystem : IFileSystem
     public void WriteAllBytes(string path, byte[] bytes) => Files[path] = bytes;
 }
 
-public sealed class InMemorySettingsStore(AppSettings? initial = null, string? warning = null) : ISettingsStore
+public sealed class InMemorySettingsStore(AppSettings? initial = null, string? warning = null, bool fileMissing = false) : ISettingsStore
 {
     public AppSettings? Saved { get; private set; }
 
     public int SaveCount { get; private set; }
 
-    public SettingsLoadResult Load() => new(Saved ?? initial ?? AppSettings.Default, warning);
+    public SettingsLoadResult Load() => new(Saved ?? initial ?? AppSettings.Default, warning, fileMissing);
 
     public void Save(AppSettings settings)
     {
@@ -89,9 +89,9 @@ public sealed class Harness
 
     public MainViewModel Vm { get; }
 
-    public Harness(AppSettings? settings = null, string? settingsWarning = null)
+    public Harness(AppSettings? settings = null, string? settingsWarning = null, bool settingsFileMissing = false)
     {
-        Settings = new InMemorySettingsStore(settings, settingsWarning);
+        Settings = new InMemorySettingsStore(settings, settingsWarning, settingsFileMissing);
         Vm = new MainViewModel(Dialogs, FileDialogs, Files, Settings);
     }
 

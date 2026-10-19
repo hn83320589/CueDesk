@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -20,6 +20,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\CueDesk.Core\CueDesk.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\samples\*.srt" LinkBase="samples" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

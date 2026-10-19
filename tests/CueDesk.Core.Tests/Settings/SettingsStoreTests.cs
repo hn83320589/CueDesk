@@ -42,6 +42,7 @@ public sealed class SettingsStoreTests : IDisposable
         var result = new SettingsStore(SettingsPath).Load();
         Assert.Equal(QualityThresholds.Default, result.Settings.Thresholds);
         Assert.NotNull(result.Warning);
+        Assert.True(result.FileMissing);
     }
 
     [Fact]
@@ -52,6 +53,7 @@ public sealed class SettingsStoreTests : IDisposable
         var result = new SettingsStore(SettingsPath).Load();
         Assert.Equal(AppSettings.Default.Thresholds, result.Settings.Thresholds);
         Assert.Contains("損毀", result.Warning);
+        Assert.False(result.FileMissing);
         Assert.True(File.Exists(Path.Combine(_dir, "settings.corrupt.json")));
     }
 

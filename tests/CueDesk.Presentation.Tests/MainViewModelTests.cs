@@ -62,10 +62,31 @@ public class MainViewModelTests
     }
 
     [Fact]
-    public void Settings_warning_is_exposed_for_startup_notice()
+    public void Corrupt_settings_warning_needs_dialog()
     {
         var h = new Harness(settingsWarning: "設定檔已損毀");
         Assert.Equal("設定檔已損毀", h.Vm.SettingsWarning);
+        Assert.True(h.Vm.SettingsWarningNeedsDialog);
+        Assert.Equal("設定檔已損毀", h.Vm.StatusMessage);
+    }
+
+    [Fact]
+    public void Missing_settings_file_is_created_with_defaults_and_only_noted_in_status()
+    {
+        var h = new Harness(settingsWarning: "找不到設定檔", settingsFileMissing: true);
+        Assert.False(h.Vm.SettingsWarningNeedsDialog);
+        Assert.Equal(AppSettings.Default, h.Settings.Saved);
+        Assert.Equal("找不到設定檔", h.Vm.StatusMessage);
+    }
+
+    [Fact]
+    public void Bom_toggle_updates_menu_text_and_saves()
+    {
+        var h = new Harness();
+        Assert.StartsWith("✓", h.Vm.BomMenuText);
+        h.Vm.ToggleBomCommand.Execute(null);
+        Assert.False(h.Settings.Saved!.WriteBom);
+        Assert.DoesNotContain("✓", h.Vm.BomMenuText);
     }
 
     // ---- unsaved changes ----

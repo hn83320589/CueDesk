@@ -23,4 +23,6 @@ public sealed class CueRowViewModel(Cue cue, int sequence, bool hasIssue)
     public string TextPreview => Cue.Text.Replace("\n", " ⏎ ");
 
     public bool HasIssue { get; } = hasIssue;
+
+    public string IssueMark => HasIssue ? "⚠" : string.Empty;
 }

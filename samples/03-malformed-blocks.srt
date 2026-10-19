@@ -1,0 +1,32 @@
+1
+00:00:01,000 --> 00:00:02,500
+Comma separator, CRLF.
+
+2
+00:00:03.000 --> 00:00:04.500
+Period separator, LF.
+
+
+
+00:00:05,000 --> 00:00:06,500
+No sequence number.
+
+4
+00:00:07,000 -> 00:00:08,000
+Broken arrow.
+
+5
+00:00:09,000 --> 00:00:61,000
+Seconds out of range.
+
+6
+00:00:12,000 --> 00:00:11,000
+End before start.
+
+7
+00:00:13,000 --> 00:00:15,500
+Mixed line endings
+inside one block.
+8
+00:00:16,000 --> 00:00:18,000
+No blank line before this block.

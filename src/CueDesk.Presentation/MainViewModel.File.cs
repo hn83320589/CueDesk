@@ -22,7 +22,12 @@ public sealed partial class MainViewModel
 
     /// <summary>Malformed blocks reported by the last open.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ParseErrorsText), nameof(HasParseErrors))]
     private ImmutableArray<ParseError> _parseErrors = [];
+
+    public bool HasParseErrors => !ParseErrors.IsEmpty;
+
+    public string ParseErrorsText => $"開檔時略過 {ParseErrors.Length} 個格式錯誤的區塊：\n{string.Join("\n", ParseErrors)}";
 
     private SubtitleEncoding? _sourceEncoding;
 

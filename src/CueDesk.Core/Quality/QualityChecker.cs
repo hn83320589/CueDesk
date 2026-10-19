@@ -45,6 +45,8 @@ public sealed record QualityIssue(IssueType Type, int CueId, int Sequence, strin
     };
 
     public bool IsFixable => Type is IssueType.Overlap or IssueType.GapTooSmall;
+
+    public bool HasFixFailure => FixFailure is not null;
 }
 
 /// <summary>

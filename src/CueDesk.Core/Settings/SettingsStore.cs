@@ -4,7 +4,8 @@ using CueDesk.Core.Quality;
 namespace CueDesk.Core.Settings;
 
 /// <param name="Warning">Non-null when defaults had to be used; meant to be shown to the user.</param>
-public sealed record SettingsLoadResult(AppSettings Settings, string? Warning);
+/// <param name="FileMissing">True on first run (no file yet); the UI shows this less prominently than corruption.</param>
+public sealed record SettingsLoadResult(AppSettings Settings, string? Warning, bool FileMissing = false);
 
 public interface ISettingsStore
 {
@@ -34,7 +35,7 @@ public sealed class SettingsStore(string path) : ISettingsStore
     {
         if (!File.Exists(Path))
         {
-            return new SettingsLoadResult(AppSettings.Default, "找不到設定檔，已使用預設值。");
+            return new SettingsLoadResult(AppSettings.Default, "找不到設定檔，已使用預設值。", FileMissing: true);
         }
 
         AppSettings? loaded;
